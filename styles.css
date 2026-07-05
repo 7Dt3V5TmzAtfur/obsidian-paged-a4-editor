@@ -1,0 +1,172 @@
+/*
+ * Paged A4 Editor — A4-style paged layout for the Obsidian editor.
+ *
+ * The page geometry is driven by CSS custom properties declared on
+ * <body> by `applyPagination()` in main.ts. The defaults below are
+ * the A4 portrait / normal-margin values; they are overridden at
+ * runtime via inline styles on <body>.
+ */
+
+.paged-editor-enabled {
+	--paged-page-width: 794px;
+	--paged-page-height: 1123px;
+	--paged-margin-top: 96px;
+	--paged-margin-right: 96px;
+	--paged-margin-bottom: 96px;
+	--paged-margin-left: 96px;
+	--paged-gap: 40px;
+}
+
+/*
+ * Desktop background: a gray surface behind the page, giving the
+ * visual impression of a Word "page layout" view.
+ */
+.paged-editor-enabled .markdown-source-view.mod-cm6 .cm-scroller {
+	background: var(--background-secondary);
+}
+
+/*
+ * The content stream is rendered as a single white "paper" strip.
+ * Inter-page separation is provided by the page-break widget (gray
+ * gap + edge shadows — see below). The outer box-shadow here only
+ * shades the boundary of the whole strip: the top edge of page 1,
+ * the bottom edge of the last page, and the left/right edges of
+ * every page. Inter-page top/bottom edges are shadowed by the
+ * widget's own box-shadow, so no repeating background is needed.
+ */
+.paged-editor-enabled .markdown-source-view.mod-cm6 .cm-content {
+	max-width: var(--paged-page-width);
+	min-height: var(--paged-page-height);
+	margin: 0 auto;
+	padding: var(--paged-margin-top) var(--paged-margin-right)
+		var(--paged-margin-bottom) var(--paged-margin-left);
+	background: var(--background-primary);
+	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06),
+		0 4px 16px rgba(0, 0, 0, 0.12);
+	box-sizing: border-box;
+}
+
+/*
+ * Page-break widget: spans the full page width (via negative left/right
+ * margins) and is tall enough to represent the bottom margin of the
+ * previous page + the visible gray gap + the top margin of the next
+ * page. This way every intermediate page gets its configured top/bottom
+ * margins — not just the first and last page (which are handled by the
+ * sizer's padding-top/padding-bottom).
+ *
+ * The widget's own background is the gray gap. Two pseudo-elements paint
+ * the white margin zones at the top and bottom, each with a soft shadow
+ * facing the gap so the two pages look like separate sheets of paper.
+ */
+.paged-editor-page-break {
+	height: calc(
+		var(--paged-margin-bottom) + var(--paged-gap) +
+		var(--paged-margin-top)
+	);
+	position: relative;
+	background: var(--background-secondary);
+	margin-left: calc(-1 * var(--paged-margin-left));
+	margin-right: calc(-1 * var(--paged-margin-right));
+}
+
+/* Top white zone: previous page's bottom margin (footer area). */
+.paged-editor-page-break::before {
+	content: '';
+	position: absolute;
+	top: 0;
+	left: 0;
+	right: 0;
+	height: var(--paged-margin-bottom);
+	background: var(--background-primary);
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+/* Bottom white zone: next page's top margin (header area). */
+.paged-editor-page-break::after {
+	content: '';
+	position: absolute;
+	bottom: 0;
+	left: 0;
+	right: 0;
+	height: var(--paged-margin-top);
+	background: var(--background-primary);
+	box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.paged-editor-page-number {
+	position: absolute;
+	/* Sit at the bottom of the previous page's bottom margin (the
+	 * conventional footer position), right above the gray gap. */
+	bottom: calc(var(--paged-margin-top) + var(--paged-gap));
+	font-size: 0.7em;
+	color: var(--text-faint);
+	pointer-events: none;
+	user-select: none;
+	white-space: nowrap;
+	z-index: 1;
+}
+
+/*
+ * End-of-document widget: has zero height (the last page's bottom
+ * margin is already provided by the sizer's padding-bottom) but still
+ * shows the last page's number, positioned inside the padding-bottom
+ * area via a negative `bottom`.
+ */
+.paged-editor-page-break[data-end='true'] {
+	height: 0;
+	background: transparent;
+}
+
+.paged-editor-page-break[data-end='true']::before,
+.paged-editor-page-break[data-end='true']::after {
+	display: none;
+}
+
+.paged-editor-page-break[data-end='true'] .paged-editor-page-number {
+	bottom: calc(-1 * var(--paged-margin-bottom));
+}
+
+/* Horizontal placement of the page-number badge (aligned to content area). */
+.paged-editor-page-break[data-position='bottom-center'] .paged-editor-page-number {
+	left: calc(50% + (var(--paged-margin-left) - var(--paged-margin-right)) / 2);
+	transform: translateX(-50%);
+}
+
+.paged-editor-page-break[data-position='bottom-right'] .paged-editor-page-number {
+	right: var(--paged-margin-right);
+}
+
+.paged-editor-page-break[data-position='bottom-left'] .paged-editor-page-number {
+	left: var(--paged-margin-left);
+}
+
+/*
+ * Reading-mode adaptation: real JS-inserted pagination drives the
+ * page layout. The desktop gray surface goes on the outer
+ * `.markdown-reading-view`; the white "paper" (with width, padding,
+ * shadow) goes on `.markdown-preview-sizer` (the actual content
+ * container). Page separation is provided by JS-inserted
+ * `.paged-editor-page-break` elements (gray gap + page-number badge),
+ * which reuse the classes defined in the editor-mode section above —
+ * no CSS-only pseudo-pagination background lines are used.
+ */
+.paged-editor-enabled .markdown-reading-view {
+	background: var(--background-secondary);
+}
+
+.paged-editor-enabled .markdown-reading-view .markdown-preview-view {
+	background: transparent;
+}
+
+.paged-editor-enabled .markdown-reading-view .markdown-preview-sizer {
+	max-width: var(--paged-page-width) !important;
+	min-height: var(--paged-page-height);
+	margin: 0 auto;
+	padding: var(--paged-margin-top) var(--paged-margin-right)
+		var(--paged-margin-bottom) var(--paged-margin-left);
+	background: var(--background-primary);
+	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.06),
+		0 4px 16px rgba(0, 0, 0, 0.12);
+	box-sizing: border-box;
+	position: relative;
+}

@@ -1,0 +1,9 @@
+{
+	"id": "paged-a4-editor",
+	"name": "Paged A4 Editor",
+	"version": "0.1.0",
+	"minAppVersion": "1.5.0",
+	"description": "Render the editor as A4-sized paged pages with auto page numbers, like Word's page layout view.",
+	"author": "Your Name",
+	"isDesktopOnly": true
+}
